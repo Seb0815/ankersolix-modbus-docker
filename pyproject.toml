@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "anker-solix-mqtt"
+version = "0.1.0"
+description = "Home Assistant independent Anker SOLIX Modbus to MQTT bridge"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.116,<1",
+  "jinja2>=3.1,<4",
+  "paho-mqtt>=2.1,<3",
+  "pydantic>=2.11,<3",
+  "pydantic-settings>=2.10,<3",
+  "pymodbus>=3.10,<4",
+  "PyYAML>=6.0,<7",
+  "uvicorn>=0.35,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.28,<1",
+  "pytest>=8.4,<9",
+  "pytest-asyncio>=1.1,<2",
+  "pyright>=1.1.403,<2",
+  "ruff>=0.12,<1",
+]
+
+[project.scripts]
+anker-solix-mqtt = "anker_solix_mqtt.app:main"
+fetch-anker-solix-upstream = "anker_solix_mqtt.upstream_fetch:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/anker_solix_mqtt"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = ["src/anker_solix_mqtt/vendor/anker_solix_official"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.pyright]
+include = ["src", "tests"]
+exclude = ["src/anker_solix_mqtt/vendor/anker_solix_official"]
+pythonVersion = "3.12"
+venvPath = "."
+venv = ".venv"
+typeCheckingMode = "strict"

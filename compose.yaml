@@ -1,0 +1,25 @@
+services:
+  anker-solix-mqtt:
+    build:
+      context: .
+      args:
+        ANKER_SOLIX_UPSTREAM_TAG: ${ANKER_SOLIX_UPSTREAM_TAG:-}
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      ANKER_DEVICES: >-
+        [{"device_id":"solarbank","host":"${SOLARBANK_HOST}","name":"Solarbank Max AC","poll_interval":5,"retry_interval":10}]
+      ANKER_MQTT__HOST: ${MQTT_HOST}
+      ANKER_MQTT__PORT: ${MQTT_PORT:-1883}
+      ANKER_MQTT__USERNAME: ${MQTT_USERNAME:-}
+      ANKER_MQTT__PASSWORD: ${MQTT_PASSWORD:-}
+      ANKER_MQTT__TOPIC_PREFIX: ${MQTT_TOPIC_PREFIX:-anker-solix}
+      ANKER_MQTT__TLS: ${MQTT_TLS:-false}
+      ANKER_WEB__PORT: 8080
+      ANKER_LOG_LEVEL: ${ANKER_LOG_LEVEL:-INFO}
+    ports:
+      - "${WEB_PORT:-8080}:8080"

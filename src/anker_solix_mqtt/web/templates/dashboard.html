@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>SOLIX Control</title>
+    <link rel="stylesheet" href="/static/app.css">
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body data-revision="{{ revision }}">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Anker SOLIX Modbus Bridge</p>
+        <h1>SOLIX Control</h1>
+      </div>
+      <div class="bridge-status" aria-label="Bridge-Status">
+        <span class="status-dot online"></span>
+        <span>Bridge aktiv</span>
+      </div>
+    </header>
+
+    <main>
+      {% if not devices %}
+        <section class="empty-state">
+          <h2>Noch kein Gerät konfiguriert</h2>
+          <p>Nach der ersten erfolgreichen Modbus-Erkennung erscheinen Messwerte und Steuerungen hier automatisch.</p>
+        </section>
+      {% endif %}
+
+      {% for device in devices %}
+        {% set metadata = device.metadata %}
+        {% set snapshot = device.snapshot %}
+        <article class="device" data-device="{{ metadata.device_id }}">
+          <header class="device-header">
+            <div>
+              <p class="model">{{ metadata.model }}</p>
+              <h2>{{ metadata.name }}</h2>
+            </div>
+            <div class="device-health {% if snapshot and snapshot.online %}is-online{% else %}is-offline{% endif %}"
+                 data-device-health="{{ metadata.device_id }}">
+              <span class="status-dot"></span>
+              <span data-health-label>{% if snapshot and snapshot.online %}Online{% else %}Offline{% endif %}</span>
+            </div>
+          </header>
+
+          <div class="freshness {% if not snapshot or snapshot.stale %}is-stale{% endif %}" data-freshness="{{ metadata.device_id }}">
+            {% if snapshot %}
+              Stand {{ snapshot.timestamp.strftime('%d.%m.%Y, %H:%M:%S') }}
+              {% if snapshot.stale %} · Werte sind veraltet{% endif %}
+            {% else %}
+              Noch keine Messwerte empfangen
+            {% endif %}
+          </div>
+
+          {% for group in device.groups %}
+            <section class="value-section">
+              <h3>{{ group.name }}</h3>
+              <div class="value-grid">
+                {% for entity in group.entities %}
+                  {% set value = snapshot.values.get(entity.key) if snapshot else none %}
+                  <div class="value-item">
+                    <span class="value-name">{{ entity.name }}</span>
+                    <strong class="value-reading">
+                      <span data-value-device="{{ metadata.device_id }}" data-value-key="{{ entity.key }}">{{ value if value is not none else '–' }}</span>
+                      {% if entity.unit %}<span class="unit">{{ entity.unit }}</span>{% endif %}
+                    </strong>
+                  </div>
+                {% endfor %}
+              </div>
+            </section>
+          {% endfor %}
+
+          {% if device.controls %}
+            <section class="controls-section">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Direkte Gerätesteuerung</p>
+                  <h3>Steuerung</h3>
+                </div>
+                <span class="control-note">Änderungen werden sofort gesendet</span>
+              </div>
+              <div class="controls-grid">
+                {% for entity in device.controls %}
+                  {% set value = snapshot.values.get(entity.key) if snapshot else none %}
+                  <form class="control" data-control data-device="{{ metadata.device_id }}" data-entity="{{ entity.key }}" data-kind="{{ entity.kind }}">
+                    <label for="{{ metadata.device_id }}-{{ entity.key }}">{{ entity.name }}</label>
+                    <div class="control-input">
+                      {% if entity.kind == 'select' %}
+                        <select id="{{ metadata.device_id }}-{{ entity.key }}" name="value">
+                          {% for option_value, option_name in entity.options.items() %}
+                            <option value="{{ option_value }}" {% if option_value|string == value|string %}selected{% endif %}>{{ option_name }}</option>
+                          {% endfor %}
+                        </select>
+                      {% elif entity.kind == 'switch' %}
+                        <label class="switch">
+                          <input id="{{ metadata.device_id }}-{{ entity.key }}" name="value" type="checkbox" {% if value %}checked{% endif %}>
+                          <span class="switch-track" aria-hidden="true"><span></span></span>
+                          <span class="switch-value">{% if value %}Ein{% else %}Aus{% endif %}</span>
+                        </label>
+                      {% else %}
+                        <div class="number-input">
+                          <input id="{{ metadata.device_id }}-{{ entity.key }}" name="value" type="number"
+                                 value="{{ value if value is not none else '' }}"
+                                 {% if entity.min_value is not none %}min="{{ entity.min_value }}"{% endif %}
+                                 {% if entity.max_value is not none %}max="{{ entity.max_value }}"{% endif %}
+                                 step="{{ entity.step or 1 }}">
+                          {% if entity.unit %}<span>{{ entity.unit }}</span>{% endif %}
+                        </div>
+                      {% endif %}
+                    </div>
+                    <output class="control-result" aria-live="polite"></output>
+                  </form>
+                {% endfor %}
+              </div>
+            </section>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </main>
+  </body>
+</html>
