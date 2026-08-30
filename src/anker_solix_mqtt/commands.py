@@ -64,43 +64,43 @@ class CommandDispatcher:
     def _find_entity(self, command: ControlCommand) -> tuple[EntityMetadata | None, str | None]:
         metadata = self._store.get_metadata(command.device_id)
         if metadata is None:
-            return None, "Unbekanntes Gerät"
+            return None, "Unknown device"
         entity = metadata.entities.get(command.entity_key)
         if entity is None:
-            return None, "Unbekannte Steuerung"
+            return None, "Unknown control"
         if not entity.writable:
-            return None, "Entität ist schreibgeschützt"
+            return None, "Entity is read-only"
         if not entity.visible:
-            return None, "Steuerung ist für dieses Gerät nicht verfügbar"
+            return None, "Control is not available for this device"
         return entity, None
 
     @staticmethod
     def _normalize_value(entity: EntityMetadata, value: Any) -> tuple[Any, str | None]:
         if entity.kind == "number":
             if isinstance(value, bool):
-                return None, "Zahlenwert erwartet"
+                return None, "Numeric value expected"
             try:
                 number = float(value)
             except (TypeError, ValueError):
-                return None, "Zahlenwert erwartet"
+                return None, "Numeric value expected"
             if entity.min_value is not None and number < entity.min_value:
-                return None, f"Wert muss mindestens {entity.min_value:g} sein"
+                return None, f"Value must be at least {entity.min_value:g}"
             if entity.max_value is not None and number > entity.max_value:
-                return None, f"Wert darf höchstens {entity.max_value:g} sein"
+                return None, f"Value must not exceed {entity.max_value:g}"
             return number, None
 
         if entity.kind == "select":
             option = str(value)
             if option not in entity.options:
-                return None, "Ungültige Auswahl"
+                return None, "Invalid option"
             return option, None
 
         if entity.kind == "switch":
             if not isinstance(value, bool):
-                return None, "Boolescher Wert erwartet"
+                return None, "Boolean value expected"
             return value, None
 
-        return None, "Sensoren können nicht geschrieben werden"
+        return None, "Sensors cannot be written"
 
     @staticmethod
     def _result(

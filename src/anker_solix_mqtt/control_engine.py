@@ -28,14 +28,14 @@ class ControlEngine:
     async def execute(self, device_id: str, entity: EntityMetadata, value: Any) -> ControlOutcome:
         device = self._devices.get(device_id)
         if device is None or device.profile is None:
-            return ControlOutcome(success=False, error="Gerät ist nicht bereit", transient=True)
+            return ControlOutcome(success=False, error="Device is not ready", transient=True)
         snapshot = self._store.get_snapshot(device_id)
         if snapshot is None or not snapshot.online:
-            return ControlOutcome(success=False, error="Gerät ist offline", transient=True)
+            return ControlOutcome(success=False, error="Device is offline", transient=True)
 
         config = device.profile.controls.get(entity.key)
         if config is None:
-            return ControlOutcome(success=False, error="Steuerung fehlt im Geräteprofil")
+            return ControlOutcome(success=False, error="Control is missing from device profile")
         error = self._validate_profile_rules(device.profile, config, value, snapshot.values)
         if error:
             return ControlOutcome(success=False, error=error)
@@ -49,7 +49,7 @@ class ControlEngine:
             data_type = str(config.get("data_type", "UINT16"))
             write_value = self._encode_value(device.profile, entity, config, value, snapshot.values)
         except (KeyError, TypeError, ValueError) as exc:
-            return ControlOutcome(success=False, error=f"Ungültiges Geräteprofil: {exc}")
+            return ControlOutcome(success=False, error=f"Invalid device profile: {exc}")
 
         result = await device.write_raw(address, write_value, data_type)
         if not result.success:
@@ -75,7 +75,7 @@ class ControlEngine:
         if isinstance(capability_entity, str) and isinstance(capability_bit, int):
             mask = _integer(state.get(capability_entity))
             if mask is None or not mask & (1 << capability_bit):
-                return "Steuerung wird von diesem Gerät nicht unterstützt"
+                return "Control is not supported by this device"
 
         visibility_entity = config.get("visibility_entity")
         if isinstance(visibility_entity, str):
@@ -83,7 +83,7 @@ class ControlEngine:
                 profile, visibility_entity, config.get("visibility_value")
             )
             if state.get(visibility_entity) != expected:
-                return "Steuerung ist im aktuellen Betriebsmodus nicht verfügbar"
+                return "Control is not available in the current operating mode"
 
         condition = _mapping(config.get("write_condition"))
         if condition:
@@ -92,14 +92,14 @@ class ControlEngine:
                 state.get(condition_entity), condition.get("operator"), condition.get("value")
             ):
                 if condition.get("hint") == "enable_backup_soc_first":
-                    return "Zuerst muss die Notstromreserve aktiviert werden"
-                return "Voraussetzung für diese Steuerung ist nicht erfüllt"
+                    return "Enable backup reserve first"
+                return "Control prerequisite is not met"
 
         soc_validation = _mapping(config.get("soc_validation"))
         if soc_validation and _condition_applies(soc_validation, state):
             numeric_value = _float(value)
             if numeric_value is None:
-                return "Zahlenwert erwartet"
+                return "Numeric value expected"
             error = _validate_soc(numeric_value, soc_validation, state)
             if error:
                 return error
@@ -108,7 +108,7 @@ class ControlEngine:
         if isinstance(direction_entity, str):
             direction = state.get(direction_entity)
             if direction not in {"charge", "discharge"}:
-                return "Zuerst Lade- oder Entladerichtung auswählen"
+                return "Select charge or discharge direction first"
             limit_key = (
                 config.get("max_charge_power_entity")
                 if direction == "charge"
@@ -118,7 +118,7 @@ class ControlEngine:
                 limit = _float(state.get(limit_key))
                 numeric_value = _float(value)
                 if limit is not None and numeric_value is not None and numeric_value > abs(limit):
-                    return f"Wert darf für diese Richtung höchstens {abs(limit):g} sein"
+                    return f"Value must not exceed {abs(limit):g} for this direction"
 
         if entity_options := config.get("option_capability_bits"):
             option_bits = _mapping(entity_options)
@@ -127,7 +127,7 @@ class ControlEngine:
             capability_key = config.get("capability_entity")
             mask = _integer(state.get(capability_key)) if isinstance(capability_key, str) else None
             if bit is not None and (mask is None or not mask & (1 << bit)):
-                return "Auswahl wird von diesem Gerät nicht unterstützt"
+                return "Option is not supported by this device"
         return None
 
     @staticmethod
@@ -148,14 +148,14 @@ class ControlEngine:
         if entity.kind == "select":
             raw_option = _integer(_raw_option(config, value))
             if raw_option is None:
-                raise ValueError("Auswahlcode ist keine Zahl")
+                raise ValueError("option code is not numeric")
             return raw_option
         if entity.kind == "switch":
             semantic = "enabled" if value else "disabled"
             raw_value = _raw_for_semantic(_mapping(config.get("options")), semantic)
             encoded = _integer(raw_value) if raw_value is not None else int(bool(value))
             if encoded is None:
-                raise ValueError("Schaltercode ist keine Zahl")
+                raise ValueError("switch code is not numeric")
             return encoded
 
         numeric_value = float(value)
@@ -186,7 +186,7 @@ class ControlEngine:
                 and maximum is not None
                 and minimum <= numeric_value <= maximum
             ):
-                return ("Wert liegt unter dem optimalen Leistungsbereich",)
+                return ("Value is below the optimal power range",)
         return ()
 
     async def _publish_optimistic(
@@ -199,10 +199,10 @@ class ControlEngine:
 
 def _validate_soc(value: float, config: dict[str, Any], state: dict[str, Any]) -> str | None:
     comparisons: dict[str, tuple[Callable[[float, float], bool], str]] = {
-        "greater_than": (lambda left, right: left > right, "größer als"),
-        "greater_than_or_equal": (lambda left, right: left >= right, "größer oder gleich"),
-        "less_than": (lambda left, right: left < right, "kleiner als"),
-        "less_than_or_equal": (lambda left, right: left <= right, "kleiner oder gleich"),
+        "greater_than": (lambda left, right: left > right, "greater than"),
+        "greater_than_or_equal": (lambda left, right: left >= right, "greater than or equal to"),
+        "less_than": (lambda left, right: left < right, "less than"),
+        "less_than_or_equal": (lambda left, right: left <= right, "less than or equal to"),
     }
     for rule_name, (comparison, description) in comparisons.items():
         targets = config.get(rule_name)
@@ -216,7 +216,7 @@ def _validate_soc(value: float, config: dict[str, Any], state: dict[str, Any]) -
                 continue
             target_value = _float(state.get(target_name))
             if target_value is not None and not comparison(value, target_value):
-                return f"Wert muss {description} {target_name} ({target_value:g}) sein"
+                return f"Value must be {description} {target_name} ({target_value:g})"
     return None
 
 
@@ -246,7 +246,7 @@ def _compare(left: object, operator: object, right: object) -> bool:
 def _raw_option(config: dict[str, Any], semantic: object) -> object:
     raw_value = _raw_for_semantic(_mapping(config.get("options")), semantic)
     if raw_value is None:
-        raise ValueError(f"unbekannte Auswahl {semantic!r}")
+        raise ValueError(f"unknown option {semantic!r}")
     return raw_value
 
 

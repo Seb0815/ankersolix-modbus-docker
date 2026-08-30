@@ -13,14 +13,14 @@ from ..models import EntityMetadata
 from ..state_store import StateStore
 
 CATEGORY_NAMES = {
-    "battery": "Batterie",
-    "power": "Leistung",
-    "energy": "Energie",
-    "grid": "Netz",
-    "pv": "Photovoltaik",
-    "temperature": "Temperaturen",
-    "diagnostic": "Diagnose",
-    "other": "Weitere Werte",
+    "battery": "Battery",
+    "power": "Power",
+    "energy": "Energy",
+    "grid": "Grid",
+    "pv": "Solar",
+    "temperature": "Temperatures",
+    "diagnostic": "Diagnostics",
+    "other": "Other values",
 }
 
 

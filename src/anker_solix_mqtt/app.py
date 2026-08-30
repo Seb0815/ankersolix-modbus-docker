@@ -49,7 +49,7 @@ class AppSettings(BaseSettings):
     def unique_device_ids(self) -> AppSettings:
         device_ids = [device.device_id for device in self.devices]
         if len(device_ids) != len(set(device_ids)):
-            raise ValueError("device_id muss eindeutig sein")
+            raise ValueError("device_id must be unique")
         return self
 
 

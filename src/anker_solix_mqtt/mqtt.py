@@ -313,7 +313,7 @@ class MQTTAdapter:
         try:
             decoded = json.loads(payload.decode("utf-8"))
             if not isinstance(decoded, dict):
-                raise ValueError("JSON-Objekt erwartet")
+                raise ValueError("JSON object expected")
             command = ControlCommand.model_validate(
                 {**decoded, "device_id": device_id, "source": "mqtt"}
             )
@@ -321,7 +321,7 @@ class MQTTAdapter:
             self._send_or_buffer(
                 self._json_publication(
                     f"{device_id}/command/result",
-                    {"status": "rejected", "error": f"Ungültiger MQTT-Befehl: {exc}"},
+                    {"status": "rejected", "error": f"Invalid MQTT command: {exc}"},
                     retain=False,
                 )
             )

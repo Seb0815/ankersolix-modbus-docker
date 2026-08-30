@@ -145,7 +145,7 @@ async def test_rejects_unsupported_capability_and_soc_relation() -> None:
 
     unsupported = await engine.execute("solarbank", entity, 95.0)
     assert not unsupported.success
-    assert "nicht unterstützt" in (unsupported.error or "")
+    assert "not supported" in (unsupported.error or "")
 
     state["parallel_capability_mask"] = 1
     _store, device, engine = await _engine(state)
@@ -153,7 +153,7 @@ async def test_rejects_unsupported_capability_and_soc_relation() -> None:
         "solarbank", device.profile.metadata.entities["charging_limit_soc"], 85.0
     )
     assert not invalid_soc.success
-    assert "größer als backup_reserve_soc" in (invalid_soc.error or "")
+    assert "greater than backup_reserve_soc" in (invalid_soc.error or "")
     assert device.writes == []
 
 
@@ -171,5 +171,5 @@ async def test_returns_profile_warning_after_successful_write() -> None:
     )
 
     assert result.success
-    assert result.warnings == ("Wert liegt unter dem optimalen Leistungsbereich",)
+    assert result.warnings == ("Value is below the optimal power range",)
     assert device.writes == [(10071, 50, "INT32")]

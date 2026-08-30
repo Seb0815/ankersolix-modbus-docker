@@ -68,14 +68,14 @@ def _translations() -> dict[str, Any]:
             "sensor": {"battery_soc": {"name": "SOC"}},
             "select": {
                 "operating_mode": {
-                    "name": "Betriebsmodus",
+                    "name": "Operating Mode",
                     "state": {
-                        "self_consumption": "Eigenverbrauch",
-                        "third_party_control": "Drittanbieter-Steuerung",
+                        "self_consumption": "Self-Consumption",
+                        "third_party_control": "Third-Party Controlled",
                     },
                 }
             },
-            "number": {"charging_limit_soc": {"name": "Ladeobergrenze"}},
+            "number": {"charging_limit_soc": {"name": "Charging Limit"}},
         }
     }
 
@@ -87,10 +87,10 @@ def test_builds_metadata_and_normalizes_official_values() -> None:
 
     assert profile.metadata.name == "Anker SOLIX Solarbank Max AC"
     assert profile.metadata.entities["charging_limit_soc"].kind == "number"
-    assert profile.metadata.entities["charging_limit_soc"].name == "Ladeobergrenze"
+    assert profile.metadata.entities["charging_limit_soc"].name == "Charging Limit"
     assert profile.metadata.entities["operating_mode"].options == {
-        "self_consumption": "Eigenverbrauch",
-        "third_party_control": "Drittanbieter-Steuerung",
+        "self_consumption": "Self-Consumption",
+        "third_party_control": "Third-Party Controlled",
     }
     assert profile.normalize(
         {

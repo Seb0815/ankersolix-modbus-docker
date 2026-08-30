@@ -30,7 +30,7 @@ async def configured_dispatcher() -> tuple[CommandDispatcher, RecordingBackend]:
             entities={
                 "limit": EntityMetadata(
                     key="limit",
-                    name="Leistungslimit",
+                    name="Power limit",
                     kind="number",
                     writable=True,
                     min_value=100,
@@ -77,5 +77,5 @@ async def test_rejects_out_of_range_value_before_backend() -> None:
     )
 
     assert result.status == "rejected"
-    assert result.error == "Wert darf höchstens 800 sein"
+    assert result.error == "Value must not exceed 800"
     assert backend.calls == []

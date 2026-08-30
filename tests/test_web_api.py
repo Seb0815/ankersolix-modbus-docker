@@ -30,7 +30,9 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
             device_id="solarbank",
             name="Solarbank Max AC",
             entities={
-                "enabled": EntityMetadata(key="enabled", name="Aktiv", kind="switch", writable=True)
+                "enabled": EntityMetadata(
+                    key="enabled", name="Enabled", kind="switch", writable=True
+                )
             },
         )
     )
@@ -59,7 +61,11 @@ async def test_renders_dashboard_from_shared_metadata(client: AsyncClient) -> No
     response = await client.get("/")
 
     assert response.status_code == 200
+    assert '<html lang="en">' in response.text
     assert "SOLIX Control" in response.text
+    assert "Bridge active" in response.text
+    assert "Direct device control" in response.text
+    assert "Changes are sent immediately" in response.text
     assert "Solarbank Max AC" in response.text
     assert 'data-entity="enabled"' in response.text
     assert response.headers["content-security-policy"].startswith("default-src 'self'")

@@ -61,13 +61,13 @@ def create_api_router(store: StateStore, dispatcher: CommandDispatcher) -> APIRo
     async def _get_state(device_id: str) -> dict[str, object]:
         snapshot = store.get_snapshot(device_id)
         if snapshot is None:
-            raise HTTPException(status_code=404, detail="Gerät nicht gefunden")
+            raise HTTPException(status_code=404, detail="Device not found")
         return snapshot.model_dump(mode="json")
 
     async def _get_metadata(device_id: str) -> dict[str, object]:
         metadata = store.get_metadata(device_id)
         if metadata is None:
-            raise HTTPException(status_code=404, detail="Gerät nicht gefunden")
+            raise HTTPException(status_code=404, detail="Device not found")
         return metadata.model_dump(mode="json")
 
     async def _get_events(request: Request) -> StreamingResponse:

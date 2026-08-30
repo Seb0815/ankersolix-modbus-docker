@@ -54,7 +54,7 @@ class FakeDriver:
         return None
 
     async def prepare(self) -> DeviceMetadata:
-        return DeviceMetadata(device_id=self.settings.device_id, name="Testgerät")
+        return DeviceMetadata(device_id=self.settings.device_id, name="Test device")
 
     async def read(self) -> dict[str, Any]:
         self.reads += 1
@@ -78,7 +78,7 @@ def _settings() -> AppSettings:
 
 def test_rejects_duplicate_device_ids() -> None:
     device = DeviceSettings(device_id="solarbank", host="192.0.2.10")
-    with pytest.raises(ValidationError, match="device_id muss eindeutig sein"):
+    with pytest.raises(ValidationError, match="device_id must be unique"):
         AppSettings(devices=(device, device), mqtt=MQTTSettings(host="broker"))
 
 

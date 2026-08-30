@@ -86,15 +86,15 @@ class OfficialModbusDriver:
     async def prepare(self) -> DeviceMetadata:
         pn_hash, _raw_pn, raw_registers = await self._manager.read_device_pn()
         if not pn_hash:
-            raise ConnectionError(f"Geräte-PN konnte nicht gelesen werden ({raw_registers})")
+            raise ConnectionError(f"Could not read device PN ({raw_registers})")
         config = await self._config_loader.load_device_config_by_file_async(
             f"config/{pn_hash}.yaml"
         )
         if config is None:
-            raise UnsupportedDeviceError(f"Kein offizielles Profil für PN-Hash {pn_hash}")
+            raise UnsupportedDeviceError(f"No official profile for PN hash {pn_hash}")
         data_points, batch_ranges = self._bindings.config_parser(config)
         if not data_points:
-            raise UnsupportedDeviceError(f"Offizielles Profil {pn_hash} enthält keine Datenpunkte")
+            raise UnsupportedDeviceError(f"Official profile {pn_hash} contains no data points")
         self._profile = build_device_profile(
             self._settings.device_id,
             self._settings.name,
@@ -107,7 +107,7 @@ class OfficialModbusDriver:
 
     async def read(self) -> dict[str, Any]:
         if self._profile is None:
-            raise RuntimeError("Gerät wurde noch nicht vorbereitet")
+            raise RuntimeError("Device has not been prepared")
         values = await self._manager.get_all_data(
             self._profile.data_points,
             batch_ranges=self._profile.batch_ranges,
@@ -136,13 +136,13 @@ def load_official_bindings() -> OfficialBindings:
         parser_module = importlib.import_module(f"{package}.config_utils")
     except ModuleNotFoundError as exc:
         raise RuntimeError(
-            "Offizieller Modbus-Kern fehlt; zuerst fetch-anker-solix-upstream ausführen"
+            "Official Modbus core is missing; run fetch-anker-solix-upstream first"
         ) from exc
 
     package_root = Path(cast(str, manager_module.__file__)).parent
-    translations = json.loads((package_root / "translations" / "de.json").read_text())
+    translations = json.loads((package_root / "translations" / "en.json").read_text())
     if not isinstance(translations, dict):
-        raise RuntimeError("Ungültige deutsche Upstream-Übersetzungsdatei")
+        raise RuntimeError("Invalid English upstream translation file")
     return OfficialBindings(
         manager_factory=cast(ManagerFactory, manager_module.ModbusConnectionManager),
         config_loader_factory=cast(ConfigLoaderFactory, config_module.AnkerSolixDeviceConfig),

@@ -123,7 +123,7 @@ async def test_command_is_dispatched_and_result_is_published() -> None:
             entities={
                 "limit": EntityMetadata(
                     key="limit",
-                    name="Leistungslimit",
+                    name="Power limit",
                     kind="number",
                     writable=True,
                     min_value=0,

@@ -43,13 +43,13 @@ class BrowserSecurityMiddleware(BaseHTTPMiddleware):
     @staticmethod
     def _validate_write(request: Request) -> JSONResponse | None:
         if request.headers.get("content-type", "").split(";", 1)[0] != "application/json":
-            return JSONResponse({"detail": "JSON erforderlich"}, status_code=415)
+            return JSONResponse({"detail": "JSON required"}, status_code=415)
         cookie = request.cookies.get(CSRF_COOKIE)
         header = request.headers.get(CSRF_HEADER)
         if not cookie or not header or not secrets.compare_digest(cookie, header):
-            return JSONResponse({"detail": "Ungültiges CSRF-Token"}, status_code=403)
+            return JSONResponse({"detail": "Invalid CSRF token"}, status_code=403)
         origin = request.headers.get("origin")
         expected_origin = f"{request.url.scheme}://{request.headers.get('host', '')}"
         if origin != expected_origin:
-            return JSONResponse({"detail": "Ungültiger Ursprung"}, status_code=403)
+            return JSONResponse({"detail": "Invalid origin"}, status_code=403)
         return None

@@ -1,61 +1,62 @@
 # Anker SOLIX MQTT Bridge
 
-Home-Assistant-unabhängige Modbus-TCP-Bridge für Anker SOLIX mit MQTT und lokalem Webfrontend.
+Home Assistant-independent Modbus TCP bridge for Anker SOLIX with MQTT and a local web interface.
 
-Die Bridge verwendet den Home-Assistant-unabhängigen Modbus-Kern des offiziellen
-Repositories [`anker-charging/ha-anker-solix-official`](https://github.com/anker-charging/ha-anker-solix-official).
-Der offizielle Code wird beim Image-Build geladen, per SHA-256 und API-Vertrag geprüft und
-zusammen mit seiner MIT-Lizenz in das Image übernommen. Home Assistant wird nicht benötigt.
+The bridge uses the Home Assistant-independent Modbus core from the official
+[`anker-charging/ha-anker-solix-official`](https://github.com/anker-charging/ha-anker-solix-official)
+repository. The official code is downloaded during the image build, verified by SHA-256 and API
+contract checks, and included in the image together with its MIT license. Home Assistant is not
+required.
 
-> Direkte Anlagensteuerung kann Ladeverhalten und Notstromreserve verändern. Zuerst mit
-> unkritischen Grenzwerten testen und den Zugriff auf Weboberfläche und MQTT-Broker auf das
-> vertrauenswürdige lokale Netz begrenzen.
+> Direct system control can change charging behavior and the backup reserve. Test with
+> non-critical limits first, and restrict access to the web interface and MQTT broker to a trusted
+> local network.
 
-## Schnellstart
+## Quick start
 
-Voraussetzungen:
+Requirements:
 
-- Docker mit Compose
-- Modbus TCP am Anker-Gerät, standardmäßig Port `502`
-- Ein vom Container erreichbarer MQTT-Broker, beispielsweise der IP-Symcon MQTT Server
+- Docker with Compose
+- Modbus TCP enabled on the Anker device, using port `502` by default
+- An MQTT broker reachable from the container, such as the IP-Symcon MQTT Server
 
 ```bash
 cp .env.example .env
 docker compose up --build -d
 ```
 
-In `.env` mindestens `SOLARBANK_HOST` und `MQTT_HOST` setzen. Das Dashboard ist danach unter
-`http://<docker-host>:8080` erreichbar. Der Healthcheck liegt unter `/healthz`.
+Set at least `SOLARBANK_HOST` and `MQTT_HOST` in `.env`. The dashboard is then available at
+`http://<docker-host>:8080`. The health endpoint is `/healthz`.
 
-Standardmäßig wird bei jedem neuen Image-Build der neueste stabile offizielle Release geprüft
-und eingebaut. Für einen reproduzierbaren Build oder Rollback kann in `.env` beispielsweise
-`ANKER_SOLIX_UPSTREAM_TAG=v1.4.3` gesetzt werden.
+By default, every new image build verifies and includes the latest stable official release. For a
+reproducible build or rollback, set a specific tag in `.env`, for example
+`ANKER_SOLIX_UPSTREAM_TAG=v1.4.3`.
 
-## Konfiguration
+## Configuration
 
-Die Anwendung liest ausschließlich Umgebungsvariablen mit Präfix `ANKER_`.
+The application reads environment variables with the `ANKER_` prefix.
 
-| Variable | Standard | Bedeutung |
+| Variable | Default | Description |
 | --- | --- | --- |
-| `ANKER_DEVICES` | erforderlich | JSON-Liste der Modbus-Geräte |
-| `ANKER_MQTT__HOST` | erforderlich | Hostname oder IP des MQTT-Brokers |
-| `ANKER_MQTT__PORT` | `1883` | MQTT-Port |
-| `ANKER_MQTT__USERNAME` | leer | Optionaler Benutzername |
-| `ANKER_MQTT__PASSWORD` | leer | Optionales Passwort |
-| `ANKER_MQTT__TOPIC_PREFIX` | `anker-solix` | Topic-Präfix ohne Wildcards |
-| `ANKER_MQTT__TLS` | `false` | TLS mit System-CA aktivieren |
-| `ANKER_WEB__HOST` | `0.0.0.0` | Bind-Adresse im Container |
-| `ANKER_WEB__PORT` | `8080` | Web-Port im Container |
-| `ANKER_LOG_LEVEL` | `INFO` | Python/Uvicorn-Loglevel |
+| `ANKER_DEVICES` | required | JSON list of Modbus devices |
+| `ANKER_MQTT__HOST` | required | MQTT broker hostname or IP address |
+| `ANKER_MQTT__PORT` | `1883` | MQTT port |
+| `ANKER_MQTT__USERNAME` | empty | Optional username |
+| `ANKER_MQTT__PASSWORD` | empty | Optional password |
+| `ANKER_MQTT__TOPIC_PREFIX` | `anker-solix` | Topic prefix without wildcards |
+| `ANKER_MQTT__TLS` | `false` | Enable TLS using the system CA store |
+| `ANKER_WEB__HOST` | `0.0.0.0` | Bind address inside the container |
+| `ANKER_WEB__PORT` | `8080` | Web port inside the container |
+| `ANKER_LOG_LEVEL` | `INFO` | Python/Uvicorn log level |
 
-Mehrere Geräte werden als JSON konfiguriert:
+Configure multiple devices as JSON:
 
 ```json
 [
   {
-    "device_id": "solarbank_haus",
+    "device_id": "solarbank_home",
     "host": "192.0.2.10",
-    "name": "Solarbank Haus",
+    "name": "Home Solarbank",
     "port": 502,
     "poll_interval": 5,
     "retry_interval": 10
@@ -63,28 +64,28 @@ Mehrere Geräte werden als JSON konfiguriert:
   {
     "device_id": "solarbank_garage",
     "host": "192.0.2.11",
-    "name": "Solarbank Garage"
+    "name": "Garage Solarbank"
   }
 ]
 ```
 
-`device_id` muss eindeutig sein und darf Buchstaben, Zahlen, `_` und `-` enthalten.
+Each `device_id` must be unique and may contain letters, numbers, `_`, and `-`.
 
 ## MQTT
 
-Alle Nutzdaten außer Availability sind UTF-8-JSON. State, Metadata und Availability werden
-retained mit QoS 1 publiziert. Der Container setzt einen Last Will für die Bridge-Availability.
+All payloads except availability are UTF-8 JSON. State, metadata, and availability are published
+as retained messages with QoS 1. The container sets a Last Will for bridge availability.
 
-| Topic | Retained | Inhalt |
+| Topic | Retained | Content |
 | --- | --- | --- |
-| `anker-solix/bridge/availability` | ja | `online` oder `offline` |
-| `anker-solix/<device_id>/availability` | ja | `online` oder `offline` |
-| `anker-solix/<device_id>/metadata` | ja | Gerät, Entitäten, Einheiten und Grenzen |
-| `anker-solix/<device_id>/state` | ja | Aktueller vollständiger Gerätezustand |
-| `anker-solix/<device_id>/command` | nein | Eingehender Steuerbefehl |
-| `anker-solix/<device_id>/command/result` | nein | Ergebnis jedes gültigen oder abgewiesenen Befehls |
+| `anker-solix/bridge/availability` | yes | `online` or `offline` |
+| `anker-solix/<device_id>/availability` | yes | `online` or `offline` |
+| `anker-solix/<device_id>/metadata` | yes | Device, entities, units, and limits |
+| `anker-solix/<device_id>/state` | yes | Current complete device state |
+| `anker-solix/<device_id>/command` | no | Incoming control command |
+| `anker-solix/<device_id>/command/result` | no | Result of every accepted or rejected command |
 
-Beispiel für einen Command:
+Example command:
 
 ```json
 {
@@ -94,31 +95,30 @@ Beispiel für einen Command:
 }
 ```
 
-`request_id` muss pro beabsichtigtem Schreibvorgang eindeutig sein. Wiederholungen derselben ID
-werden dedupliziert. Zulässige `entity_key`-Werte, Datentypen, Optionen und Grenzen stehen im
-Metadata-Topic. MQTT und Weboberfläche durchlaufen denselben Validator und dieselbe ControlEngine.
+The `request_id` must be unique for each intended write operation. Repeated messages with the same
+ID are deduplicated. Valid `entity_key` values, data types, options, and limits are available in
+the metadata topic. MQTT and the web interface use the same validator and control engine.
 
-## Entladung zeitweise sperren
+## Temporarily inhibit battery discharge
 
-Wenn beispielsweise während des Ladens eines Elektroautos keine Energie aus der Solarbank
-verwendet werden soll, kann eine externe Zeitsteuerung wie IP-Symcon die Batterieleistung auf
-`0 W` setzen. Die Bridge besitzt derzeit keinen eigenen Zeitplan.
+If the Solarbank must not provide energy while an electric vehicle is charging, an external
+scheduler such as IP-Symcon can set battery power to `0 W`. The bridge currently has no built-in
+scheduler.
 
-> Ein Sollwert von `0 W` hält die Batterie vollständig neutral: Sie wird in diesem Zeitraum weder
-> entladen noch geladen. Soll nur die Entladung verhindert werden, während PV-Überschuss weiterhin
-> in die Batterie fließen darf, ist diese Sequenz nicht geeignet.
+> A `0 W` setpoint keeps the battery completely neutral: it will neither charge nor discharge
+> during this period. This sequence is not suitable if discharge should be blocked while surplus
+> PV power should still charge the battery.
 
-Alle Befehle werden an dieses Topic gesendet:
+Send all commands to this topic:
 
 ```text
 anker-solix/solarbank/command
 ```
 
-Zu Beginn des Sperrzeitraums muss die Zeitsteuerung die folgenden drei Befehle nacheinander
-senden. Erst wenn für einen Befehl ein erfolgreiches Ergebnis empfangen wurde, darf der nächste
-gesendet werden.
+At the start of the inhibit period, the scheduler must send the following three commands in order.
+Only send the next command after receiving a successful result for the previous one.
 
-### Schritt 1: Drittanbieter-Steuerung aktivieren
+### Step 1: Enable third-party control
 
 ```json
 {
@@ -128,7 +128,7 @@ gesendet werden.
 }
 ```
 
-### Schritt 2: Batterierichtung festlegen
+### Step 2: Select the battery direction
 
 ```json
 {
@@ -138,7 +138,7 @@ gesendet werden.
 }
 ```
 
-### Schritt 3: Batterieleistung auf null setzen
+### Step 3: Set battery power to zero
 
 ```json
 {
@@ -148,18 +148,17 @@ gesendet werden.
 }
 ```
 
-Die Beispiel-IDs müssen bei jeder Ausführung durch neue, eindeutige `request_id`-Werte ersetzt
-werden. Andernfalls liefert die Bridge wegen ihrer Deduplizierung nur das Ergebnis der früheren
-Ausführung zurück.
+Replace the example IDs with new, unique `request_id` values for every execution. Otherwise, the
+bridge deduplicates the command and only returns the result from the earlier execution.
 
-Das Ergebnis erscheint auf:
+The result is published to:
 
 ```text
 anker-solix/solarbank/command/result
 ```
 
-Die Zeitsteuerung muss für die jeweils gesendete `request_id` mindestens `"status":"success"`
-prüfen. Danach sollte im retained State unter `anker-solix/solarbank/state` Folgendes gelten:
+For each sent `request_id`, the scheduler must at least verify `"status":"success"`. The retained
+state at `anker-solix/solarbank/state` should then contain:
 
 ```json
 {
@@ -173,8 +172,8 @@ prüfen. Danach sollte im retained State unter `anker-solix/solarbank/state` Fol
 }
 ```
 
-Nach dem Sperrzeitraum kann die Max AC in den benutzerdefinierten Modus zurückgeschaltet werden,
-sofern dort der gewünschte normale Anker-Zeitplan hinterlegt ist:
+After the inhibit period, the Max AC can return to custom mode if that mode contains the desired
+normal Anker schedule:
 
 ```json
 {
@@ -184,23 +183,23 @@ sofern dort der gewünschte normale Anker-Zeitplan hinterlegt ist:
 }
 ```
 
-Die vom Testgerät gemeldete Capability-Maske `36` erlaubt `third_party_control` und
-`custom_mode`, aber nicht `self_consumption`. Unterstützte Modi müssen grundsätzlich aus dem
-Metadata-Topic des jeweiligen Geräts übernommen werden. Den Rückwechsel zuerst manuell testen und
-dabei `battery_charging_power` sowie `battery_discharging_power` beobachten.
+The capability mask `36` reported by the tested device permits `third_party_control` and
+`custom_mode`, but not `self_consumption`. Always obtain supported modes from the metadata topic of
+the specific device. Test the return to the normal mode manually first while monitoring
+`battery_charging_power` and `battery_discharging_power`.
 
-Bei MQTT-Ausfall, einem abgewiesenen Befehl oder einem State mit `online: false` beziehungsweise
-`stale: true` darf die Zeitsteuerung nicht davon ausgehen, dass die Sperre aktiv ist. Für eine
-dauerhafte Automatisierung sind Ergebnisüberwachung und eine Störungsmeldung erforderlich.
+If MQTT fails, a command is rejected, or state reports `online: false` or `stale: true`, the
+scheduler must not assume that the inhibit is active. Reliable automation requires result
+monitoring and an error notification.
 
-## Weboberfläche
+## Web interface
 
-Das deutsche Dashboard zeigt Geräteverbindung, Aktualität, Messwerte und alle vom offiziellen
-Geräteprofil freigegebenen Controls. Änderungen werden sofort ausgeführt. Schreibzugriffe sind
-durch Origin-Prüfung, JSON-Pflicht und ein CSRF-Token geschützt; eine Anmeldung ist bewusst nicht
-enthalten. Der Web-Port sollte daher nicht direkt aus dem Internet erreichbar sein.
+The dashboard displays device connectivity, freshness, measurements, and every control enabled by
+the official device profile. Changes are applied immediately. Origin validation, a JSON content
+requirement, and a CSRF token protect write requests; authentication is intentionally not included.
+The web port should therefore not be exposed directly to the internet.
 
-## Lokale Entwicklung
+## Local development
 
 ```bash
 python3.12 -m venv .venv
@@ -209,7 +208,7 @@ python3.12 -m venv .venv
 .venv/bin/anker-solix-mqtt
 ```
 
-Prüfungen:
+Checks:
 
 ```bash
 .venv/bin/ruff check .
@@ -218,6 +217,6 @@ Prüfungen:
 .venv/bin/pytest
 ```
 
-Die Provenienz des eingebauten offiziellen Kerns steht im Image unter
-`anker_solix_mqtt/vendor/anker_solix_official/_upstream.json`; dessen Lizenz liegt daneben als
+The provenance of the included official core is stored in the image at
+`anker_solix_mqtt/vendor/anker_solix_official/_upstream.json`; its license is stored alongside it as
 `UPSTREAM_LICENSE`.

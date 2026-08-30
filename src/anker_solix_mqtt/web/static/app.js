@@ -13,9 +13,9 @@ function requestId() {
 function displayValue(value) {
   if (value === null || value === undefined || value === "") return "–";
   if (typeof value === "number") {
-    return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 3 }).format(value);
+    return new Intl.NumberFormat("en-US", { maximumFractionDigits: 3 }).format(value);
   }
-  if (typeof value === "boolean") return value ? "Ein" : "Aus";
+  if (typeof value === "boolean") return value ? "On" : "Off";
   return String(value);
 }
 
@@ -35,8 +35,8 @@ function applySnapshot(snapshot) {
   const freshness = document.querySelector(`[data-freshness="${CSS.escape(snapshot.device_id)}"]`);
   if (freshness) {
     freshness.classList.toggle("is-stale", snapshot.stale);
-    const timestamp = new Date(snapshot.timestamp).toLocaleString("de-DE");
-    freshness.textContent = `Stand ${timestamp}${snapshot.stale ? " · Werte sind veraltet" : ""}`;
+    const timestamp = new Date(snapshot.timestamp).toLocaleString("en-US");
+    freshness.textContent = `Updated ${timestamp}${snapshot.stale ? " · Values are stale" : ""}`;
   }
 }
 
@@ -62,7 +62,7 @@ async function sendControl(form) {
 
   input.disabled = true;
   form.dataset.pending = "true";
-  setResult(form, "pending", "Wird gesendet …");
+  setResult(form, "pending", "Sending...");
   try {
     const response = await fetch(`/api/v1/devices/${encodeURIComponent(form.dataset.device)}/commands`, {
       method: "POST",
@@ -78,9 +78,9 @@ async function sendControl(form) {
     });
     const result = await response.json();
     if (!response.ok || result.status !== "success") {
-      throw new Error(result.error || result.detail || "Befehl fehlgeschlagen");
+      throw new Error(result.error || result.detail || "Command failed");
     }
-    setResult(form, result.warnings.length ? "warning" : "success", result.warnings[0] || "Übernommen");
+    setResult(form, result.warnings.length ? "warning" : "success", result.warnings[0] || "Applied");
     await refreshDevice(form.dataset.device);
   } catch (error) {
     setResult(form, "error", error.message);
@@ -89,7 +89,7 @@ async function sendControl(form) {
     input.disabled = false;
     delete form.dataset.pending;
     if (form.dataset.kind === "switch") {
-      form.querySelector(".switch-value").textContent = input.checked ? "Ein" : "Aus";
+      form.querySelector(".switch-value").textContent = input.checked ? "On" : "Off";
     }
   }
 }

@@ -58,7 +58,7 @@ class DeviceRuntime:
 
             values = await self._driver.read()
             if not values:
-                raise ConnectionError("Modbus-Abfrage lieferte keine Werte")
+                raise ConnectionError("Modbus query returned no values")
         except Exception as exc:
             _LOGGER.warning("Device %s poll failed: %s", self.settings.device_id, exc)
             await self._publish_failure(str(exc))

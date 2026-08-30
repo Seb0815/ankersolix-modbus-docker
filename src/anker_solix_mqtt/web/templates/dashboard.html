@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,17 +14,17 @@
         <p class="eyebrow">Anker SOLIX Modbus Bridge</p>
         <h1>SOLIX Control</h1>
       </div>
-      <div class="bridge-status" aria-label="Bridge-Status">
+      <div class="bridge-status" aria-label="Bridge status">
         <span class="status-dot online"></span>
-        <span>Bridge aktiv</span>
+        <span>Bridge active</span>
       </div>
     </header>
 
     <main>
       {% if not devices %}
         <section class="empty-state">
-          <h2>Noch kein Gerät konfiguriert</h2>
-          <p>Nach der ersten erfolgreichen Modbus-Erkennung erscheinen Messwerte und Steuerungen hier automatisch.</p>
+          <h2>No devices configured yet</h2>
+          <p>Measurements and controls will appear here automatically after the first successful Modbus detection.</p>
         </section>
       {% endif %}
 
@@ -46,10 +46,10 @@
 
           <div class="freshness {% if not snapshot or snapshot.stale %}is-stale{% endif %}" data-freshness="{{ metadata.device_id }}">
             {% if snapshot %}
-              Stand {{ snapshot.timestamp.strftime('%d.%m.%Y, %H:%M:%S') }}
-              {% if snapshot.stale %} · Werte sind veraltet{% endif %}
+              Updated {{ snapshot.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+              {% if snapshot.stale %} · Values are stale{% endif %}
             {% else %}
-              Noch keine Messwerte empfangen
+              No measurements received yet
             {% endif %}
           </div>
 
@@ -75,10 +75,10 @@
             <section class="controls-section">
               <div class="section-heading">
                 <div>
-                  <p class="eyebrow">Direkte Gerätesteuerung</p>
-                  <h3>Steuerung</h3>
+                  <p class="eyebrow">Direct device control</p>
+                  <h3>Controls</h3>
                 </div>
-                <span class="control-note">Änderungen werden sofort gesendet</span>
+                <span class="control-note">Changes are sent immediately</span>
               </div>
               <div class="controls-grid">
                 {% for entity in device.controls %}
@@ -96,7 +96,7 @@
                         <label class="switch">
                           <input id="{{ metadata.device_id }}-{{ entity.key }}" name="value" type="checkbox" {% if value %}checked{% endif %}>
                           <span class="switch-track" aria-hidden="true"><span></span></span>
-                          <span class="switch-value">{% if value %}Ein{% else %}Aus{% endif %}</span>
+                          <span class="switch-value">{% if value %}On{% else %}Off{% endif %}</span>
                         </label>
                       {% else %}
                         <div class="number-input">
