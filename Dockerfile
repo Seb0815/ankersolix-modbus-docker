@@ -37,6 +37,6 @@ USER app
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD ["python", "-c", "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:'+os.getenv('ANKER_WEB__PORT','8080')+'/healthz',timeout=3).close()"]
+    CMD ["python", "-c", "import http.client,os; host=os.getenv('ANKER_WEB__HOST','0.0.0.0'); host={'0.0.0.0':'127.0.0.1','::':'::1'}.get(host,host); connection=http.client.HTTPConnection(host,int(os.getenv('ANKER_WEB__PORT','8080')),timeout=3); connection.request('GET','/healthz'); raise SystemExit(0 if connection.getresponse().status == 200 else 1)"]
 
 ENTRYPOINT ["anker-solix-mqtt"]
