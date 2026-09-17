@@ -30,7 +30,7 @@ Set at least `SOLARBANK_HOST` and `MQTT_HOST` in `.env`. The dashboard is then a
 
 By default, every new image build verifies and includes the latest stable official release. For a
 reproducible build or rollback, set a specific tag in `.env`, for example
-`ANKER_SOLIX_UPSTREAM_TAG=v1.4.3`.
+`ANKER_SOLIX_UPSTREAM_TAG=v1.5.0`.
 
 ## Configuration
 
@@ -204,7 +204,7 @@ The web port should therefore not be exposed directly to the internet.
 ```bash
 python3.12 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
-.venv/bin/python -m anker_solix_mqtt.upstream_fetch --tag v1.4.3
+.venv/bin/python -m anker_solix_mqtt.upstream_fetch --tag v1.5.0
 .venv/bin/anker-solix-mqtt
 ```
 
